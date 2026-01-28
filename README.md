@@ -46,7 +46,7 @@ Arduino IDE: 项目 > 加载库 > 添加.ZIP库...
 Windows: `Documents\Arduino\libraries`
 Mac: ~/Documents/Arduino/libraries/
 Linux: ~/Arduino/libraries/
-快速开始[注：下列程序使用AI生成，尚未验证，请使用项目中的NodeLib_ESP32_ANCS_Example.ino工程]
+快速开始[注：下列程序使用AI生成，尚未验证，请使用项目中的NodeLib_Example.ino工程]
 
 1. 基本示例
 
@@ -208,9 +208,7 @@ API文档
 NodeLib_ESP32_ANCS 类
 
 构造函数
-cpp
-下载
-复制
+
 NodeLib_ESP32_ANCS ancs;
 公共方法
 
@@ -340,7 +338,7 @@ iOS设置说明
 
 MIT License
 
-v1.0.0 (2024-01-28)
+v1.0.0 (2026-01-29)
 初始版本发布
 支持ANCS v1.0
 随机6位配对码
