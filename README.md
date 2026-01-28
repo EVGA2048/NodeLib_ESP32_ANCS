@@ -1,8 +1,10 @@
 # NodeLib_ESP32_ANCS
 一个用于ESP32的ANCS (Apple Notification Center Service) 客户端库，支持通过BLE接收iOS设备通知。
 
+
 [已知问题]
 iOS26无法搜索到蓝牙，显示一个不正确的名称
+
 
 功能特性
 ✅ 通过BLE接收iOS设备通知
@@ -13,11 +15,13 @@ iOS26无法搜索到蓝牙，显示一个不正确的名称
 ✅ 随机6位配对码，提高安全性
 ✅ 兼容ESP32、ESP32-S3等系列
 
+
 硬件要求
 ESP32开发板 (测试使用ESP32-S3 N16R8)
 USB数据线
 iOS设备 (iPhone/iPad, 测试使用iOS16 iPadOS16)
 软件依赖
+
 
 Arduino IDE
 安装 Arduino IDE 测试使用版本2.3.6
@@ -25,7 +29,6 @@ ESP32开发板支持
 打开Arduino IDE
 文件 > 首选项
 在"附加开发板管理器网址"中添加：
-复制
 https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 工具 > 开发板 > 开发板管理器
 搜索 "ESP32"，安装 "ESP32 by Espressif Systems"
@@ -35,6 +38,7 @@ https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32
 ESP32 BLE Arduino by Neil Kolban
 如果需要显示OLED，可安装：Adafruit SSD1306, Adafruit GFX Library
 安装库
+
 
 方法1：手动安装
 下载本库的ZIP文件
@@ -108,6 +112,13 @@ void setup() {
 void loop() {
     ancs.loop();  // 必须调用，保持库运行
 }
+
+
+
+
+
+
+
 2. 带OLED显示的示例
 
 /**
@@ -203,6 +214,12 @@ void loop() {
 }
 
 
+
+
+
+
+
+
 API文档
 
 NodeLib_ESP32_ANCS 类
@@ -245,6 +262,8 @@ typedef void (*ANCSNotificationCallback)(uint32_t uid, const char* title, const 
 typedef void (*ANCSEventCallback)(uint8_t eventId, uint32_t uid);
 // eventId: 事件类型 (0=添加, 1=修改, 2=移除)
 // uid: 通知唯一标识符
+
+
 高级用法
 
 1. 发送通知到服务器
@@ -277,6 +296,8 @@ void onNotificationReceived(uint32_t uid, const char* title, const char* message
     Serial.printf("收到通知: %s - %s\n", title, message);
     sendToServer(title, message);
 }
+
+
 2. 多设备支持
 
 // 可以创建多个实例连接不同设备
