@@ -7,107 +7,102 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <BLEClient.h>
-#include "esp_mac.h"
-#include <string>
+#include <map> 
 
-// Callback function types
-typedef void (*ANCSNotificationCallback)(uint32_t uid, const char* title, const char* message);
-typedef void (*ANCSEventCallback)(uint8_t eventId, uint32_t uid);
+// Callback types
+typedef void (*NodeLibNotificationCallback)(int eventId, uint32_t uid, const char* appId, const char* title, const char* message);
+typedef void (*NodeLibMediaCallback)(const char* title, const char* artist, const char* album, bool isPlaying);
 
 class NodeLib_ESP32_ANCS {
 public:
     NodeLib_ESP32_ANCS();
-    ~NodeLib_ESP32_ANCS();
-    
-    // Core functions
-    void begin(const char* deviceName = "ESP32-ANCS");
+    void begin(const char* deviceName = "NodeLib-ESP32");
     void loop();
+    void setCallback(NodeLibNotificationCallback cb);
+    void setMediaCallback(NodeLibMediaCallback cb);
     
-    // Callback setters
-    void setNotificationCallback(ANCSNotificationCallback cb);
-    void setEventCallback(ANCSEventCallback cb);
+    // Internal callbacks
+    void _onAncsDataReceived(uint8_t* pData, size_t length);
+    void _onAncsNotificationReceived(uint8_t* pData, size_t length);
+    void _onAmsUpdateReceived(uint8_t* pData, size_t length);
     
-    // Utility functions
-    bool isConnected();
-    bool isRunning();
-    String getPasskey();  // 新增：获取配对码
-    
+    void _handleConnect(esp_ble_gatts_cb_param_t *param);
+    void _handleDisconnect();
+    void _onSecurityComplete(bool success);
+
 private:
-    // BLE Objects
-    BLEServer* pServer = nullptr;
-    BLEClient* pClient = nullptr;
-    BLEAddress* pRemoteAddress = nullptr;
-    BLERemoteCharacteristic* pRemoteNotif = nullptr;
-    BLERemoteCharacteristic* pRemoteCP = nullptr;
-    BLERemoteCharacteristic* pRemoteData = nullptr;
+    NodeLibNotificationCallback _cbNotify;
+    NodeLibMediaCallback _cbMedia;
     
-    // State variables
-    bool deviceConnected = false;
-    bool isPaired = false;
-    String passkey = "";  // 存储配对码
-    
-    // State machine
     enum AppState {
         STATE_ADVERTISING,
         STATE_CONNECTED_WAITING, 
         STATE_CONNECTING_CLIENT,
+        STATE_WAIT_FOR_SECURITY, 
         STATE_DISCOVERING_SERVICES,
         STATE_SUBSCRIBING,
         STATE_RUNNING
     };
-    AppState currentState = STATE_ADVERTISING;
-    unsigned long stateStartTime = 0;
-    
-    // Parser state
+    AppState _currentState;
+    unsigned long _stateStartTime;
+
+    // ANCS Parsing State
     enum ParseState {
-        ST_WAIT_CMD,
-        ST_CHECK_UID,
-        ST_ATTR_ID,
-        ST_LEN1,
-        ST_LEN2,
-        ST_DATA
+        ST_WAIT_CMD, ST_CHECK_UID, ST_ATTR_ID, ST_LEN1, ST_LEN2, ST_DATA
     };
-    ParseState pState = ST_WAIT_CMD;
+    ParseState _pState;
     
-    // Parser variables
-    int uidBytesRead = 0;
-    uint32_t parsedUID = 0;
-    uint16_t attrLen = 0;
-    uint16_t attrBytesRead = 0;
-    uint8_t currentAttrId = 0;
-    std::string currentBuffer = "";
-    std::string tempTitle = "";
-    std::string tempMessage = "";
+    // BLE Objects
+    BLEServer* _pServer;
+    BLEClient* _pClient;
+    BLEAddress* _pRemoteAddress;
     
-    // Request queue
-    volatile bool pendingRequest = false;
-    volatile uint32_t targetUID = 0;
-    volatile uint32_t activeRequestUID = 0;
-    
-    // Callbacks
-    ANCSNotificationCallback notificationCallback = nullptr;
-    ANCSEventCallback eventCallback = nullptr;
-    
-    // Private methods
+    // ANCS Characteristics
+    BLERemoteCharacteristic* _pRemoteNotif; 
+    BLERemoteCharacteristic* _pRemoteCP;    
+    BLERemoteCharacteristic* _pRemoteData;  
+    bool _ancsAvailable;
+
+    // AMS Characteristics
+    BLERemoteCharacteristic* _pRemoteCmd;          
+    BLERemoteCharacteristic* _pRemoteEntityUpdate; 
+    BLERemoteCharacteristic* _pRemoteEntityAttr;   
+    bool _amsAvailable;
+
+    // ANCS Parsing Variables
+    int _uidBytesRead;
+    uint32_t _parsedUID;
+    uint16_t _attrLen;
+    uint16_t _attrBytesRead;
+    uint8_t _currentAttrId;
+    String _currentBuffer; 
+    bool _pendingRequest;
+    uint32_t _targetUID;
+    uint32_t _activeRequestUID;
+    String _tempAppId;     
+    String _tempTitle;     
+    String _tempMessage;   
+
+    // AMS Storage
+    String _mediaTitle;    
+    String _mediaArtist;   
+    String _mediaAlbum;    
+    bool _mediaPlaying;
+    int _lastPlaybackState;
+
+    bool _securityDone; 
+    bool _servicesDumped;
+    bool _ancsCharsDumped; 
+
+    // Internal Helpers
     void setState(AppState newState);
-    void addSolicitation(BLEAdvertisementData &adv);
-    void performRequest(uint32_t uid);
-    void generatePasskey();  // 生成随机配对码
-    
-    // Internal handlers
-    void handleDataReceived(uint8_t* pData, size_t length);
-    void handleNotificationReceived(uint8_t* pData, size_t length);
-    
-    // Static callbacks (trampoline functions)
-    static void staticOnDataReceived(BLERemoteCharacteristic* pChar, uint8_t* pData, size_t length, bool isNotify);
-    static void staticOnNotificationReceived(BLERemoteCharacteristic* pChar, uint8_t* pData, size_t length, bool isNotify);
-    
-    // Security callbacks
-    class SecurityCallbacks;
-    class ServerCallbacks;
-    
-    // Instance pointer for static callbacks
-    static NodeLib_ESP32_ANCS* instance;
+    void performAncsRequest(uint32_t uid);
+    void subscribeToAms();
+    void addSolicitation(BLEAdvertisementData &adv, BLEUUID uuid);
+    BLERemoteCharacteristic* findChar(BLERemoteService* pService, BLEUUID uuid);
+    BLERemoteService* findService(BLEUUID uuid); 
+    void dumpVisibleServices(); 
+    void dumpServiceCharacteristics(BLERemoteService* pService);
 };
 
 #endif
