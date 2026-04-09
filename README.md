@@ -1,4 +1,10 @@
 # NodeLib_ESP32_ANCS
+
+20260409更新：
+正在着手打造新的NodeLib系列，此项目保留，新的NodeLib_ANCS项目重新开发，此外还会有支援Android的NodeLib_GMCS，且相互兼容
+
+
+
 一个用于ESP32的ANCS (Apple Notification Center Service) 客户端库，支持通过BLE接收iOS设备通知。
 
 2026_1_29Thr 更新日志：
